@@ -1,6 +1,5 @@
 package com.padesigner.ui;
 
-import javax.crypto.KeyGenerator;
 import javax.swing.*;
 import java.awt.*;
 
@@ -26,12 +25,12 @@ public class MainMenu extends JFrame {
         });
 
         signButton.addActionListener(e -> {
-          new SignerUI();
+            new SignerUI();
             dispose();
         });
 
         verifyButton.addActionListener(e -> {
-//            new VerifierUI();
+            // new VerifierUI();
             dispose();
         });
 

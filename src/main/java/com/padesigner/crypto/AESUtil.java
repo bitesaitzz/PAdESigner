@@ -1,7 +1,6 @@
 package com.padesigner.crypto;
 
 import javax.crypto.Cipher;
-import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 import java.io.File;
 import java.io.FileInputStream;
@@ -32,6 +31,7 @@ public class AESUtil {
             fos.write(encrypted);
         }
     }
+
     public static RSAPrivateKey decryptPrivateKey(File encryptedKeyFile, String pin) throws Exception {
 
         try (FileInputStream fis = new FileInputStream(encryptedKeyFile)) {
@@ -41,16 +41,13 @@ public class AESUtil {
                 throw new IllegalArgumentException("Encrypted key data is empty.");
             }
 
-
             byte[] key = sha256(pin);
             SecretKeySpec keySpec = new SecretKeySpec(key, "AES");
 
             Cipher cipher = Cipher.getInstance("AES/ECB/PKCS5Padding");
             cipher.init(Cipher.DECRYPT_MODE, keySpec);
 
-
             byte[] decryptedKey = cipher.doFinal(encryptedKey);
-
 
             KeyFactory keyFactory = KeyFactory.getInstance("RSA");
             return (RSAPrivateKey) keyFactory.generatePrivate(new PKCS8EncodedKeySpec(decryptedKey));
