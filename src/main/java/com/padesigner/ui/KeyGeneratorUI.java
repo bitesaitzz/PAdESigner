@@ -5,11 +5,17 @@ import com.padesigner.crypto.RSAKeyManager;
 
 import javax.swing.*;
 import java.awt.*;
+import java.awt.event.ActionListener;
 import java.io.File;
 import java.security.KeyPair;
 
 public class KeyGeneratorUI extends JFrame {
+
     public KeyGeneratorUI() {
+        setupUI();
+    }
+
+    private void setupUI() {
         setTitle("PAdESigner: Key Generator");
         setSize(800, 600);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -17,26 +23,34 @@ public class KeyGeneratorUI extends JFrame {
         setLayout(new FlowLayout());
 
         JTextField pinField = new JPasswordField(20);
-        JButton generateButton = new JButton("Generate keys");
-        JLabel dirLabel = new JLabel("Save public key to:");
         JTextField dirField = new JTextField(20);
-        JButton browseButton = new JButton("Browse");
-        JButton backButton = new JButton("Back");
         JComboBox<String> drivesComboBox = new JComboBox<>();
-        JButton findUSBButton = new JButton("Find USB");
 
-        backButton.addActionListener(e -> handleBackButton());
-        generateButton.addActionListener(e -> handleGenerateButton(pinField, dirField, drivesComboBox));
-        findUSBButton.addActionListener(e -> handleFindUSBButton(drivesComboBox));
-        browseButton.addActionListener(e -> handleBrouseButton(drivesComboBox, dirField));
+        JButton generateButton = createButton("Generate keys", e -> handleGenerateButton(pinField, dirField, drivesComboBox));
+        JButton browseButton = createButton("Browse", e -> handleBrowseButton(dirField));
+        JButton backButton = createButton("Back", e -> handleBackButton());
+        JButton findUSBButton = createButton("Find USB", e -> handleFindUSBButton(drivesComboBox));
 
+        addComponents(pinField, dirField, drivesComboBox, generateButton, browseButton, backButton, findUSBButton);
+
+        setVisible(true);
+        handleFindUSBButton(drivesComboBox);
+    }
+
+    private JButton createButton(String text, ActionListener actionListener) {
+        JButton button = new JButton(text);
+        button.addActionListener(actionListener);
+        return button;
+    }
+
+    private void addComponents(JTextField pinField, JTextField dirField, JComboBox<String> drivesComboBox,
+                                JButton generateButton, JButton browseButton, JButton backButton, JButton findUSBButton) {
         add(new JLabel("Enter PIN:"));
         add(pinField);
         add(Box.createHorizontalStrut(800));
-        add(dirLabel);
+        add(new JLabel("Save public key to:"));
         add(dirField);
         add(browseButton);
-        add(Box.createHorizontalStrut(800));
         add(Box.createHorizontalStrut(800));
         add(new JLabel("Select USB drive:"));
         add(drivesComboBox);
@@ -44,11 +58,9 @@ public class KeyGeneratorUI extends JFrame {
         add(Box.createHorizontalStrut(800));
         add(generateButton);
         add(backButton);
-        setVisible(true);
-        handleFindUSBButton(drivesComboBox);
     }
 
-    private void handleBrouseButton(JComboBox<String> drivesComboBox, JTextField dirField) {
+    private void handleBrowseButton(JTextField dirField) {
         JFileChooser chooser = new JFileChooser();
         chooser.setDialogTitle("Choose folder to save public key");
         chooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
@@ -67,60 +79,60 @@ public class KeyGeneratorUI extends JFrame {
         String pin = pinField.getText();
         String dir = dirField.getText();
         String usbPath = (String) drivesComboBox.getSelectedItem();
+
+        if (!validateInputs(pin, dir, usbPath)) {
+            return;
+        }
+
+        try {
+            KeyPair keyPair = RSAKeyManager.generateRSAKeyPair();
+            saveKeys(keyPair, pin, dir, usbPath);
+            JOptionPane.showMessageDialog(this, "Keys generated successfully");
+            pinField.setText("");
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            JOptionPane.showMessageDialog(this, "Error generating keys: " + ex.getMessage());
+        }
+    }
+
+    private boolean validateInputs(String pin, String dir, String usbPath) {
         if (pin.isEmpty()) {
-            JOptionPane.showMessageDialog(this, "PIN is empty");
-            return;
+            showMessage("PIN is empty");
+            return false;
         } else if (pin.length() < 4) {
-            JOptionPane.showMessageDialog(this, "PIN is too short");
-            return;
+            showMessage("PIN is too short");
+            return false;
         } else if (usbPath == null || usbPath.isEmpty()) {
-            JOptionPane.showMessageDialog(this, "USB drive not selected");
-            return;
+            showMessage("USB drive not selected");
+            return false;
+        } else if (dir == null || dir.isEmpty()) {
+            showMessage("Directory not selected");
+            return false;
+        } else if (!new File(dir).exists() || !new File(dir).isDirectory() || !new File(dir).canWrite()) {
+            showMessage("Invalid or unwritable directory");
+            return false;
+        } else if (!new File(usbPath).exists() || !new File(usbPath).isDirectory() || !new File(usbPath).canWrite()) {
+            showMessage("Invalid or unwritable USB drive");
+            return false;
         }
-        if (dir == null || dir.isEmpty()) {
-            JOptionPane.showMessageDialog(this, "Directory not selected");
-            return;
+
+        if (confirmOverwrite(new File(usbPath + "private_key.enc"), "Private key already exists on USB drive. Do you want to overwrite it?") &&
+            confirmOverwrite(new File(dir + "public_key.pem"), "Public key already exists in the directory. Do you want to overwrite it?")) {
+            return true;
         }
-        if (!new File(dir).exists()) {
-            JOptionPane.showMessageDialog(this, "Directory does not exist");
-            return;
+
+        return false;
+    }
+
+    private boolean confirmOverwrite(File file, String message) {
+        if (file.exists()) {
+            int result = JOptionPane.showConfirmDialog(this, message, "Warning", JOptionPane.YES_NO_OPTION);
+            return result == JOptionPane.YES_OPTION;
         }
-        if (!new File(usbPath).exists()) {
-            JOptionPane.showMessageDialog(this, "USB drive does not exist");
-            return;
-        }
-        if (!new File(usbPath).isDirectory()) {
-            JOptionPane.showMessageDialog(this, "USB drive is not a directory");
-            return;
-        }
-        if (!new File(dir).isDirectory()) {
-            JOptionPane.showMessageDialog(this, "Directory is not a directory");
-            return;
-        }
-        if (!new File(dir).canWrite()) {
-            JOptionPane.showMessageDialog(this, "Directory is not writable");
-            return;
-        }
-        if (!new File(usbPath).canWrite()) {
-            JOptionPane.showMessageDialog(this, "USB drive is not writable");
-            return;
-        }
-        if (new File(usbPath + "private_key.enc").exists()) {
-            int result = JOptionPane.showConfirmDialog(this,
-                    "Private key already exists on USB drive. Do you want to overwrite it?", "Warning",
-                    JOptionPane.YES_NO_OPTION);
-            if (result != JOptionPane.YES_OPTION) {
-                return;
-            }
-        }
-        if (new File(dir + "public_key.pem").exists()) {
-            int result = JOptionPane.showConfirmDialog(this,
-                    "Public key already exists in the directory. Do you want to overwrite it?", "Warning",
-                    JOptionPane.YES_NO_OPTION);
-            if (result != JOptionPane.YES_OPTION) {
-                return;
-            }
-        }
+        return true;
+    }
+
+    private void saveKeys(KeyPair keyPair, String pin, String dir, String usbPath) throws Exception {
         if (!dir.endsWith("/")) {
             dir += "/";
         }
@@ -128,18 +140,11 @@ public class KeyGeneratorUI extends JFrame {
             usbPath += "/";
         }
 
-        try {
-            KeyPair keyPair = RSAKeyManager.generateRSAKeyPair();
-            File publicKeyFile = new File(dir + "public_key.pem");
-            RSAKeyManager.savePublicKey(keyPair.getPublic(), publicKeyFile);
-            File privateKeyFile = new File(usbPath + "private_key.enc");
-            AESUtil.encryptAndSavePrivateKey(keyPair.getPrivate(), pin, privateKeyFile);
-            JOptionPane.showMessageDialog(this, "Keys generated successfully");
-            pinField.setText("");
-        } catch (Exception ex) {
-            ex.printStackTrace();
-            JOptionPane.showMessageDialog(this, "Error generating keys: " + ex.getMessage());
-        }
+        File publicKeyFile = new File(dir + "public_key.pem");
+        RSAKeyManager.savePublicKey(keyPair.getPublic(), publicKeyFile);
+
+        File privateKeyFile = new File(usbPath + "private_key.enc");
+        AESUtil.encryptAndSavePrivateKey(keyPair.getPrivate(), pin, privateKeyFile);
     }
 
     private void handleFindUSBButton(JComboBox<String> drivesComboBox) {
@@ -149,11 +154,15 @@ public class KeyGeneratorUI extends JFrame {
             if (usbDrives.length > 0) {
                 drivesComboBox.addItem(usbDrives[0]);
             } else {
-                JOptionPane.showMessageDialog(this, "No USB drives found");
+                showMessage("No USB drives found");
             }
         } catch (Exception ex) {
             ex.printStackTrace();
-            JOptionPane.showMessageDialog(this, "Error getting USB drives: " + ex.getMessage());
+            showMessage("Error getting USB drives: " + ex.getMessage());
         }
+    }
+
+    private void showMessage(String message) {
+        JOptionPane.showMessageDialog(this, message);
     }
 }
