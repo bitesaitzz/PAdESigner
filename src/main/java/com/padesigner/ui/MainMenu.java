@@ -30,7 +30,7 @@ public class MainMenu extends JFrame {
         });
 
         verifyButton.addActionListener(e -> {
-            // new VerifierUI();
+            new VerifierUI();
             dispose();
         });
 

@@ -14,43 +14,60 @@ import java.security.spec.PKCS8EncodedKeySpec;
 public class AESUtil {
 
     public static byte[] sha256(String pin) throws Exception {
-        MessageDigest digest = MessageDigest.getInstance("SHA-256");
-        return digest.digest(pin.getBytes("UTF-8"));
+        return hashWithSHA256(pin.getBytes("UTF-8"));
     }
 
     public static void encryptAndSavePrivateKey(PrivateKey privateKey, String pin, File outputFile) throws Exception {
         byte[] key = sha256(pin);
-        SecretKeySpec secretKey = new SecretKeySpec(key, "AES");
-
-        Cipher cipher = Cipher.getInstance("AES");
-        cipher.init(Cipher.ENCRYPT_MODE, secretKey);
-
-        byte[] encrypted = cipher.doFinal(privateKey.getEncoded());
-
-        try (FileOutputStream fos = new FileOutputStream(outputFile)) {
-            fos.write(encrypted);
-        }
+        byte[] encrypted = encryptWithAES(privateKey.getEncoded(), key);
+        writeFile(outputFile, encrypted);
     }
 
     public static RSAPrivateKey decryptPrivateKey(File encryptedKeyFile, String pin) throws Exception {
+        byte[] encryptedKey = readFile(encryptedKeyFile);
+        if (encryptedKey.length == 0) {
+            throw new IllegalArgumentException("Encrypted key data is empty.");
+        }
 
-        try (FileInputStream fis = new FileInputStream(encryptedKeyFile)) {
+        byte[] key = sha256(pin);
+        byte[] decryptedKey = decryptWithAES(encryptedKey, key);
 
-            byte[] encryptedKey = fis.readAllBytes();
-            if (encryptedKey.length == 0) {
-                throw new IllegalArgumentException("Encrypted key data is empty.");
-            }
+        KeyFactory keyFactory = KeyFactory.getInstance("RSA");
+        return (RSAPrivateKey) keyFactory.generatePrivate(new PKCS8EncodedKeySpec(decryptedKey));
+    }
 
-            byte[] key = sha256(pin);
-            SecretKeySpec keySpec = new SecretKeySpec(key, "AES");
+    private static byte[] hashWithSHA256(byte[] input) throws Exception {
+        MessageDigest digest = MessageDigest.getInstance("SHA-256");
+        return digest.digest(input);
+    }
 
-            Cipher cipher = Cipher.getInstance("AES/ECB/PKCS5Padding");
-            cipher.init(Cipher.DECRYPT_MODE, keySpec);
+    private static byte[] encryptWithAES(byte[] data, byte[] key) throws Exception {
+        SecretKeySpec secretKey = new SecretKeySpec(key, "AES");
+        Cipher cipher = Cipher.getInstance("AES");
+        cipher.init(Cipher.ENCRYPT_MODE, secretKey);
+        return cipher.doFinal(data);
+    }
 
-            byte[] decryptedKey = cipher.doFinal(encryptedKey);
+    private static byte[] decryptWithAES(byte[] data, byte[] key) throws Exception {
+        SecretKeySpec keySpec = new SecretKeySpec(key, "AES");
+        Cipher cipher = Cipher.getInstance("AES/ECB/PKCS5Padding");
+        cipher.init(Cipher.DECRYPT_MODE, keySpec);
+        return cipher.doFinal(data);
+    }
 
-            KeyFactory keyFactory = KeyFactory.getInstance("RSA");
-            return (RSAPrivateKey) keyFactory.generatePrivate(new PKCS8EncodedKeySpec(decryptedKey));
+    private static void writeFile(File file, byte[] content) throws Exception {
+        try (FileOutputStream fos = new FileOutputStream(file)) {
+            fos.write(content);
+        } catch (Exception e) {
+            throw new Exception("Error saving file: " + e.getMessage(), e);
+        }
+    }
+
+    private static byte[] readFile(File file) throws Exception {
+        try (FileInputStream fis = new FileInputStream(file)) {
+            return fis.readAllBytes();
+        } catch (Exception e) {
+            throw new Exception("Error reading file: " + e.getMessage(), e);
         }
     }
 }
