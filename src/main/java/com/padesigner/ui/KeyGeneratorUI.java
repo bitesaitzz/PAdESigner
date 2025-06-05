@@ -9,12 +9,22 @@ import java.awt.event.ActionListener;
 import java.io.File;
 import java.security.KeyPair;
 
+/**
+ * KeyGeneratorUI is a Swing-based user interface for generating RSA key pairs.
+ * It allows users to enter a PIN, select a directory to save the public key,
+ * and choose a USB drive to save the private key.
+ * The keys are generated using RSAKeyManager and encrypted with AESUtil.
+ */
 public class KeyGeneratorUI extends JFrame {
 
     public KeyGeneratorUI() {
         setupUI();
     }
 
+    /**
+     * Main method to run the KeyGeneratorUI.
+     * It initializes the UI and sets it visible.
+     */
     private void setupUI() {
         setTitle("PAdESigner: Key Generator");
         setSize(800, 600);
@@ -26,7 +36,8 @@ public class KeyGeneratorUI extends JFrame {
         JTextField dirField = new JTextField(20);
         JComboBox<String> drivesComboBox = new JComboBox<>();
 
-        JButton generateButton = createButton("Generate keys", e -> handleGenerateButton(pinField, dirField, drivesComboBox));
+        JButton generateButton = createButton("Generate keys",
+                e -> handleGenerateButton(pinField, dirField, drivesComboBox));
         JButton browseButton = createButton("Browse", e -> handleBrowseButton(dirField));
         JButton backButton = createButton("Back", e -> handleBackButton());
         JButton findUSBButton = createButton("Find USB", e -> handleFindUSBButton(drivesComboBox));
@@ -37,14 +48,33 @@ public class KeyGeneratorUI extends JFrame {
         handleFindUSBButton(drivesComboBox);
     }
 
+    /**
+     * Creates a JButton with the specified text and action listener.
+     *
+     * @param text           The text to display on the button.
+     * @param actionListener The ActionListener to handle button clicks.
+     * @return A JButton configured with the specified text and action listener.
+     */
     private JButton createButton(String text, ActionListener actionListener) {
         JButton button = new JButton(text);
         button.addActionListener(actionListener);
         return button;
     }
 
+    /**
+     * Adds components to the UI.
+     * 
+     * @param pinField       The JTextField for entering the PIN.
+     * @param dirField       The JTextField for entering the directory to save the
+     *                       public key.
+     * @param drivesComboBox The JComboBox for selecting the USB drive.
+     * @param generateButton The JButton to generate keys.
+     * @param browseButton   The JButton to browse for the directory.
+     * @param backButton     The JButton to go back to the main menu.
+     * @param findUSBButton  The JButton to find USB drives.
+     */
     private void addComponents(JTextField pinField, JTextField dirField, JComboBox<String> drivesComboBox,
-                                JButton generateButton, JButton browseButton, JButton backButton, JButton findUSBButton) {
+            JButton generateButton, JButton browseButton, JButton backButton, JButton findUSBButton) {
         add(new JLabel("Enter PIN:"));
         add(pinField);
         add(Box.createHorizontalStrut(800));
@@ -60,6 +90,13 @@ public class KeyGeneratorUI extends JFrame {
         add(backButton);
     }
 
+    /**
+     * Handles the browse button click event to select a directory for saving the
+     * public key.
+     *
+     * @param dirField The JTextField where the selected directory path will be
+     *                 displayed.
+     */
     private void handleBrowseButton(JTextField dirField) {
         JFileChooser chooser = new JFileChooser();
         chooser.setDialogTitle("Choose folder to save public key");
@@ -70,11 +107,22 @@ public class KeyGeneratorUI extends JFrame {
         }
     }
 
+    /**
+     * Handles the back button click event to return to the main menu.
+     */
     private void handleBackButton() {
         new MainMenu();
         dispose();
     }
 
+    /**
+     * Handles the generate button click event to generate and save keys.
+     * 
+     * @param pinField       The JTextField containing the PIN.
+     * @param dirField       The JTextField containing the directory path for the
+     *                       public key.
+     * @param drivesComboBox The JComboBox containing the selected USB drive path.
+     */
     private void handleGenerateButton(JTextField pinField, JTextField dirField, JComboBox<String> drivesComboBox) {
         String pin = pinField.getText();
         String dir = dirField.getText();
@@ -95,6 +143,14 @@ public class KeyGeneratorUI extends JFrame {
         }
     }
 
+    /**
+     * Validates the user inputs for PIN, directory, and USB drive.
+     *
+     * @param pin     The PIN entered by the user.
+     * @param dir     The directory path for saving the public key.
+     * @param usbPath The selected USB drive path.
+     * @return true if all inputs are valid, false otherwise.
+     */
     private boolean validateInputs(String pin, String dir, String usbPath) {
         if (pin.isEmpty()) {
             showMessage("PIN is empty");
@@ -116,14 +172,23 @@ public class KeyGeneratorUI extends JFrame {
             return false;
         }
 
-        if (confirmOverwrite(new File(usbPath + "private_key.enc"), "Private key already exists on USB drive. Do you want to overwrite it?") &&
-            confirmOverwrite(new File(dir + "public_key.pem"), "Public key already exists in the directory. Do you want to overwrite it?")) {
+        if (confirmOverwrite(new File(usbPath + "private_key.enc"),
+                "Private key already exists on USB drive. Do you want to overwrite it?") &&
+                confirmOverwrite(new File(dir + "public_key.pem"),
+                        "Public key already exists in the directory. Do you want to overwrite it?")) {
             return true;
         }
 
         return false;
     }
 
+    /**
+     * Confirms with the user whether to overwrite an existing file.
+     *
+     * @param file    The file to check for existence.
+     * @param message The message to display in the confirmation dialog.
+     * @return true if the user confirms overwriting, false otherwise.
+     */
     private boolean confirmOverwrite(File file, String message) {
         if (file.exists()) {
             int result = JOptionPane.showConfirmDialog(this, message, "Warning", JOptionPane.YES_NO_OPTION);
@@ -132,6 +197,15 @@ public class KeyGeneratorUI extends JFrame {
         return true;
     }
 
+    /**
+     * Saves the generated RSA keys to the specified directory and USB drive.
+     *
+     * @param keyPair The generated RSA key pair.
+     * @param pin     The PIN used for encrypting the private key.
+     * @param dir     The directory path to save the public key.
+     * @param usbPath The USB drive path to save the encrypted private key.
+     * @throws Exception If an error occurs while saving the keys.
+     */
     private void saveKeys(KeyPair keyPair, String pin, String dir, String usbPath) throws Exception {
         if (!dir.endsWith("/")) {
             dir += "/";
@@ -147,6 +221,12 @@ public class KeyGeneratorUI extends JFrame {
         AESUtil.encryptAndSavePrivateKey(keyPair.getPrivate(), pin, privateKeyFile);
     }
 
+    /**
+     * Handles the Find USB button click event to populate the JComboBox with USB
+     * drive paths.
+     *
+     * @param drivesComboBox The JComboBox to populate with USB drive paths.
+     */
     private void handleFindUSBButton(JComboBox<String> drivesComboBox) {
         drivesComboBox.removeAllItems();
         try {
@@ -162,6 +242,11 @@ public class KeyGeneratorUI extends JFrame {
         }
     }
 
+    /**
+     * Displays a message dialog with the specified message.
+     *
+     * @param message The message to display in the dialog.
+     */
     private void showMessage(String message) {
         JOptionPane.showMessageDialog(this, message);
     }

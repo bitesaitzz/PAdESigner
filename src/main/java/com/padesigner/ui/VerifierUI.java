@@ -13,6 +13,11 @@ import java.io.File;
 import java.security.PublicKey;
 import java.util.List;
 
+/**
+ * VerifierUI is a Swing-based user interface for verifying digital signatures
+ * on PDF documents. It allows users to select a signed PDF file and a public
+ * key file, and then verifies the signature using the selected public key.
+ */
 public class VerifierUI extends JFrame {
 
     private JTextField pdfFileField;
@@ -23,6 +28,10 @@ public class VerifierUI extends JFrame {
         setupUI();
     }
 
+    /**
+     * Main method to run the VerifierUI.
+     * It initializes the UI and sets it visible.
+     */
     private void setupUI() {
         setTitle("PAdESigner: Verify Signature");
         setSize(800, 600);
@@ -44,13 +53,29 @@ public class VerifierUI extends JFrame {
         setVisible(true);
     }
 
+    /**
+     * Creates a JButton with the specified text and action listener.
+     *
+     * @param text           The text to display on the button.
+     * @param actionListener The ActionListener to handle button clicks.
+     * @return A JButton configured with the specified text and action listener.
+     */
     private JButton createButton(String text, ActionListener actionListener) {
         JButton button = new JButton(text);
         button.addActionListener(actionListener);
         return button;
     }
 
-    private void addComponents(JButton browsePdfButton, JButton browseKeyButton, JButton verifyButton, JButton backButton) {
+    /**
+     * Adds components to the UI.
+     *
+     * @param browsePdfButton Button to browse for signed PDF files.
+     * @param browseKeyButton Button to browse for public key files.
+     * @param verifyButton    Button to verify the signature.
+     * @param backButton      Button to go back to the main menu.
+     */
+    private void addComponents(JButton browsePdfButton, JButton browseKeyButton, JButton verifyButton,
+            JButton backButton) {
         add(new JLabel("Select signed PDF file:"));
         add(pdfFileField);
         add(browsePdfButton);
@@ -66,6 +91,10 @@ public class VerifierUI extends JFrame {
         add(backButton);
     }
 
+    /**
+     * Handles the action of browsing for a signed PDF file.
+     * Opens a file chooser dialog to select a PDF file and updates the text field.
+     */
     private void handleBrowsePdfButton() {
         JFileChooser fileChooser = new JFileChooser();
         fileChooser.setDialogTitle("Select Signed PDF File");
@@ -76,6 +105,11 @@ public class VerifierUI extends JFrame {
         }
     }
 
+    /**
+     * Handles the action of browsing for a public key file.
+     * Opens a file chooser dialog to select a public key file and updates the text
+     * field.
+     */
     private void handleBrowseKeyButton() {
         JFileChooser fileChooser = new JFileChooser();
         fileChooser.setDialogTitle("Select Public Key File");
@@ -86,6 +120,11 @@ public class VerifierUI extends JFrame {
         }
     }
 
+    /**
+     * Handles the action of verifying the signature of the selected PDF file
+     * using the selected public key file.
+     * Displays the verification result in a status label and a message dialog.
+     */
     private void handleVerifyButton() {
         String pdfFilePath = pdfFileField.getText();
         String publicKeyFilePath = publicKeyFileField.getText();
@@ -132,6 +171,14 @@ public class VerifierUI extends JFrame {
         }
     }
 
+    /**
+     * Verifies the signature of the PDF file using the provided public key.
+     *
+     * @param pdfFilePath The path to the signed PDF file.
+     * @param publicKey   The public key used for verification.
+     * @return true if the signature is valid, false otherwise.
+     * @throws Exception If an error occurs during verification.
+     */
     private boolean verifySignature(String pdfFilePath, PublicKey publicKey) throws Exception {
         PdfReader reader = new PdfReader(pdfFilePath);
         PdfDocument pdfDoc = new PdfDocument(reader);
@@ -145,14 +192,24 @@ public class VerifierUI extends JFrame {
         String signatureName = signatureNames.get(0); // Assuming the first signature
         PdfPKCS7 pkcs7 = signUtil.readSignatureData(signatureName);
 
-        return pkcs7.verifySignatureIntegrityAndAuthenticity() && pkcs7.getSigningCertificate().getPublicKey().equals(publicKey);
+        return pkcs7.verifySignatureIntegrityAndAuthenticity()
+                && pkcs7.getSigningCertificate().getPublicKey().equals(publicKey);
     }
 
+    /**
+     * Handles the action of going back to the main menu.
+     * Creates a new instance of MainMenu and disposes the current frame.
+     */
     private void handleBackButton() {
         new MainMenu();
         dispose();
     }
 
+    /**
+     * Displays a message dialog with the specified message.
+     *
+     * @param message The message to display in the dialog.
+     */
     private void showMessage(String message) {
         JOptionPane.showMessageDialog(this, message);
     }

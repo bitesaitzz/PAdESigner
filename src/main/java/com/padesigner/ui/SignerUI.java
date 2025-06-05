@@ -12,6 +12,13 @@ import java.awt.event.ActionListener;
 
 import com.padesigner.crypto.MyPdfSigner;
 
+/**
+ * SignerUI is a Swing-based user interface for signing PDF documents using a
+ * private key stored on a USB drive.
+ * It allows users to select a PDF file, enter their PIN, and choose the USB
+ * drive containing their private key.
+ * The signed document is saved with a new name indicating it has been signed.
+ */
 public class SignerUI extends JFrame {
 
     static {
@@ -23,11 +30,19 @@ public class SignerUI extends JFrame {
     private JLabel statusLabel;
     private JComboBox<String> drivesComboBox;
 
+    /**
+     * Constructor for SignerUI.
+     * Initializes the UI components and sets up the event handlers.
+     */
     public SignerUI() {
         setupUI();
         handleFindUSBButton(drivesComboBox);
     }
 
+    /**
+     * Main method to run the SignerUI.
+     * It initializes the UI and sets it visible.
+     */
     private void setupUI() {
         setTitle("PAdESigner: Sign Document");
         setSize(800, 600);
@@ -50,12 +65,27 @@ public class SignerUI extends JFrame {
         setVisible(true);
     }
 
+    /**
+     * Creates a JButton with the specified text and action listener.
+     *
+     * @param text           The text to display on the button.
+     * @param actionListener The ActionListener to handle button clicks.
+     * @return A JButton configured with the specified text and action listener.
+     */
     private JButton createButton(String text, ActionListener actionListener) {
         JButton button = new JButton(text);
         button.addActionListener(actionListener);
         return button;
     }
 
+    /**
+     * Adds components to the UI.
+     *
+     * @param browseButton  The JButton to browse for the PDF file.
+     * @param signButton    The JButton to sign the document.
+     * @param backButton    The JButton to go back to the main menu.
+     * @param findUSBButton The JButton to find USB drives.
+     */
     private void addComponents(JButton browseButton, JButton signButton, JButton backButton, JButton findUSBButton) {
         add(new JLabel("Enter PIN:"));
         add(pinField);
@@ -75,6 +105,11 @@ public class SignerUI extends JFrame {
         add(backButton);
     }
 
+    /**
+     * Handles the action of finding USB drives and populating the combo box.
+     *
+     * @param drivesComboBox The JComboBox to populate with USB drive paths.
+     */
     private void handleFindUSBButton(JComboBox<String> drivesComboBox) {
         drivesComboBox.removeAllItems();
         try {
@@ -90,6 +125,9 @@ public class SignerUI extends JFrame {
         }
     }
 
+    /**
+     * Handles the action of browsing for a PDF file to sign.
+     */
     private void handleBrowsePdfButton() {
         JFileChooser fileChooser = new JFileChooser();
         fileChooser.setDialogTitle("Select PDF file to sign");
@@ -100,6 +138,9 @@ public class SignerUI extends JFrame {
         }
     }
 
+    /**
+     * Handles the action of signing the document.
+     */
     private void handleSignButton() {
         String pdfFilePath = pdfFileField.getText();
         String pin = pinField.getText();
@@ -139,11 +180,19 @@ public class SignerUI extends JFrame {
         }
     }
 
+    /**
+     * Handles the action of going back to the main menu.
+     */
     private void handleBackButton() {
         new MainMenu();
         dispose();
     }
 
+    /**
+     * Displays a message dialog with the specified message.
+     *
+     * @param message The message to display in the dialog.
+     */
     private void showMessage(String message) {
         JOptionPane.showMessageDialog(this, message);
     }
